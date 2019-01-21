@@ -36,6 +36,7 @@ import com.arcsoft.face.FaceInfo;
 import com.arcsoft.face.FaceSimilar;
 import com.arcsoft.face.LivenessInfo;
 import com.common.pos.api.util.PosUtil;
+import com.google.gson.Gson;
 import com.mylhyl.circledialog.CircleDialog;
 import com.runvision.bean.AppData;
 import com.runvision.bean.DaoSession;
@@ -43,6 +44,7 @@ import com.runvision.bean.FaceInfoss;
 import com.runvision.bean.ImageStack;
 import com.runvision.bean.RecognitionRecordDao;
 import com.runvision.bean.SocketRecordDao;
+import com.runvision.bean.Ticket;
 import com.runvision.broadcast.NetWorkStateReceiver;
 import com.runvision.broadcast.UdiskReceiver;
 import com.runvision.core.Const;
@@ -74,6 +76,8 @@ import com.telpo.tps550.api.TelpoException;
 import com.telpo.tps550.api.idcard.IdCard;
 import com.telpo.tps550.api.idcard.IdentityInfo;
 import com.telpo.tps550.api.util.ShellUtils;
+import com.zhy.http.okhttp.OkHttpUtils;
+import com.zhy.http.okhttp.callback.StringCallback;
 import com.zkteco.android.IDReader.IDPhotoHelper;
 import com.zkteco.android.IDReader.WLTService;
 import com.zkteco.android.biometric.core.device.ParameterHelper;
@@ -99,6 +103,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import es.dmoral.toasty.Toasty;
+import okhttp3.Call;
 
 
 public class MainActivity extends AppCompatActivity implements NetWorkStateReceiver.INetStatusListener, View.OnClickListener {
@@ -1036,7 +1043,7 @@ public class MainActivity extends AppCompatActivity implements NetWorkStateRecei
             Log.i(TAG, "开始读卡失败，错误码：" + e.getErrorCode() + "\n错误信息："
                     + e.getMessage() + "\n内部代码="
                     + e.getInternalErrorCode());
-            Toast.makeText(mContext, "连接读卡器失败:" + e.getMessage(), Toast.LENGTH_LONG).show();
+            //Toast.makeText(mContext, "连接读卡器失败:" + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -1072,6 +1079,9 @@ public class MainActivity extends AppCompatActivity implements NetWorkStateRecei
         if(audionum == 4) {
 //            playMusic(R.raw.nolive);
             playMusic(R.raw.error);
+        }
+        if (audionum == 5) {
+            playMusic(R.raw.no_ticket);
         }
         loadprompt.setText(showmessage);
         promptshow_xml.setVisibility(View.VISIBLE);
@@ -1200,15 +1210,15 @@ public class MainActivity extends AppCompatActivity implements NetWorkStateRecei
                 faceBmp_view.setScaleType(ImageView.ScaleType.FIT_XY);
             } else {
                 faceBmp_view.setImageBitmap(AppData.getAppData().getOneFaceBmp());
-                FileUtils.saveFile(AppData.getAppData().getOneFaceBmp(), snapImageID, TestDate.DGetSysTime() + "_Face");
+                //FileUtils.saveFile(AppData.getAppData().getOneFaceBmp(), snapImageID, TestDate.DGetSysTime() + "_Face");
                 //保存身份证图片
                 String cardImageID = snapImageID + "_card";
-                FileUtils.saveFile(AppData.getAppData().getCardBmp(), cardImageID, TestDate.DGetSysTime() + "_Card");
+                //FileUtils.saveFile(AppData.getAppData().getCardBmp(), cardImageID, TestDate.DGetSysTime() + "_Card");
 
                 record = new Record(AppData.getAppData().getoneCompareScore() + "", str, Environment.getExternalStorageDirectory() + "/FaceAndroid/" + TestDate.DGetSysTime() + "_Face" + "/" + snapImageID, "人证");
                 user = new User(AppData.getAppData().getName(), "无", AppData.getAppData().getSex(), 0, "无", AppData.getAppData().getCardNo(), Environment.getExternalStorageDirectory() + "/FaceAndroid/" + TestDate.DGetSysTime() + "_Card" + "/" + cardImageID, DateTimeUtils.getTime());
                 user.setRecord(record);
-                MyApplication.faceProvider.addRecord(user);
+//                MyApplication.faceProvider.addRecord(user);
 
             }
             oneVsMoreView.setVisibility(View.GONE);
@@ -1216,39 +1226,29 @@ public class MainActivity extends AppCompatActivity implements NetWorkStateRecei
             playMusic(R.raw.error);
         } else if (AppData.getAppData().getOneFaceBmp() != null && AppData.getAppData().getoneCompareScore() >= SPUtil.getFloat(Const.KEY_CARDSCORE, Const.ONEVSONE_SCORE)) {
             str = "成功";
-            playMusic(R.raw.success);
             isSuccessComper.setImageResource(R.mipmap.icon_tg);
             faceBmp_view.setImageBitmap(AppData.getAppData().getOneFaceBmp());
-            GPIOHelper.openDoor(true);
-            PosUtil.setRelayPower(1);//开闸
-
-            mHandler.postDelayed(() -> {
-                GPIOHelper.openDoor(false);
-                PosUtil.setRelayPower(0);//关闸
-            }, SPUtil.getInt(Const.KEY_OPENDOOR, Const.CLOSE_DOOR_TIME) * 1000);
 
             if (AppData.getAppData().getOneFaceBmp() != null) {
-                FileUtils.saveFile(AppData.getAppData().getOneFaceBmp(), snapImageID, TestDate.DGetSysTime() + "_Face");
+                //FileUtils.saveFile(AppData.getAppData().getOneFaceBmp(), snapImageID, TestDate.DGetSysTime() + "_Face");
             }
             //保存身份证图片
             String cardImageID = snapImageID + "_card";
             if (AppData.getAppData().getCardBmp() != null) {
-                FileUtils.saveFile(AppData.getAppData().getCardBmp(), cardImageID, TestDate.DGetSysTime() + "_Card");
+                //FileUtils.saveFile(AppData.getAppData().getCardBmp(), cardImageID, TestDate.DGetSysTime() + "_Card");
             }
 
             record = new Record(AppData.getAppData().getoneCompareScore() + "", str, Environment.getExternalStorageDirectory() + "/FaceAndroid/" + TestDate.DGetSysTime() + "_Face" + "/" + snapImageID, "人证");
             user = new User(AppData.getAppData().getName(), "无", AppData.getAppData().getSex(), 0, "无", AppData.getAppData().getCardNo(), Environment.getExternalStorageDirectory() + "/FaceAndroid/" + TestDate.DGetSysTime() + "_Card" + "/" + cardImageID, DateTimeUtils.getTime());
             user.setRecord(record);
-            MyApplication.faceProvider.addRecord(user);
+//            MyApplication.faceProvider.addRecord(user);
 
-            HttpQueryTicket.queryTicket(mContext, user.getCardNo());
+            //验证是否购票
+            queryTicket(user.getCardNo());
 
             mHandler.postDelayed(() -> {
-                GPIOHelper.openDoor(false);
                 PosUtil.setRelayPower(0);//关闸
-            }, 1000);
-            oneVsMoreView.setVisibility(View.GONE);
-            alert.setVisibility(View.VISIBLE);
+            }, SPUtil.getInt(Const.KEY_OPENDOOR, Const.CLOSE_DOOR_TIME) * 1000);
 
         } else {
             oneVsMoreView.setVisibility(View.GONE);
@@ -1289,6 +1289,39 @@ public class MainActivity extends AppCompatActivity implements NetWorkStateRecei
             oneVsMoreView.setVisibility(View.GONE);
             alert.setVisibility(View.GONE);
         }, 2000);
+    }
+
+    public void queryTicket(String sfz) {
+
+        OkHttpUtils
+                .post()
+                .url(Const.QUERY_TICKET)
+                .addParams("sfz", sfz)
+                .build()
+                .execute(new StringCallback() {
+                    @Override
+                    public void onError(Call call, Exception e, int id) {
+                        Toasty.error(mContext, "服务器连接失败，请检测网络", Toast.LENGTH_SHORT, true).show();
+                    }
+
+                    @Override
+                    public void onResponse(String response, int id) {
+                        Gson gson = new Gson();
+                        Ticket gsonTicket = gson.fromJson(response, Ticket.class);
+                        if (gsonTicket.getStatus() == 1) {
+                            playMusic(R.raw.success);
+                            // 操作成功---开闸
+                            PosUtil.setRelayPower(1);//开闸
+                            oneVsMoreView.setVisibility(View.GONE);
+                            alert.setVisibility(View.VISIBLE);
+                        } else if (gsonTicket.getStatus() == 2) {
+                            ShowPromptMessage("未查询到您的购票信息", 5);
+                            // 操作失败
+                            //Toasty.error(mContext, "未查询到您的购票信息", Toast.LENGTH_SHORT, true).show();
+                        }
+                        Log.i(TAG, "QueryTicket success:" + response.toString());
+                    }
+                });
     }
 
 
@@ -1958,12 +1991,6 @@ public class MainActivity extends AppCompatActivity implements NetWorkStateRecei
     }
 
     /******************G701/G702身份证读卡******************/
-    private UsbManager mUsbManager;
-    private UsbDevice idcard_reader;
-    private boolean hasReader = false;
-    private PendingIntent mPermissionIntent;
-    private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
-
     private IdentityInfo info;
     private Bitmap cardBitmap;
     private byte[] image;
@@ -1994,6 +2021,7 @@ public class MainActivity extends AppCompatActivity implements NetWorkStateRecei
 
                 if (info != null) {
                     if("".equals(info.getName())) {
+                        Log.e(TAG, "名字===Null");
                         return false;
                     }
                     image = info.getHead_photo();
@@ -2023,7 +2051,7 @@ public class MainActivity extends AppCompatActivity implements NetWorkStateRecei
                     if (1 == WLTService.wlt2Bmp(image, buf)) {
                         cardBitmap = IDPhotoHelper.Bgr2Bitmap(buf);
                     }
-                    if (ReaderCardFlag && !info.getName().equals("")) {
+                    if (ReaderCardFlag && info != null) {
                         isOpenOneVsMore = false;
                         ReaderCardFlag = false;
                         Message msg = new Message();
