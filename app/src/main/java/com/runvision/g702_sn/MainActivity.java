@@ -388,8 +388,9 @@ public class MainActivity extends AppCompatActivity implements NetWorkStateRecei
                         Const.UPDATE_IP = false;
                     }
 
+                    // 循环读取身份证
                     if (SPUtil.getBoolean(Const.KEY_ISOPEN_ONE, Const.OPEN_ONE_VS_ONE)) {
-                        mHandler.sendMessageDelayed(mHandler.obtainMessage(Const.MSG_READ_CARD, ""), 100);
+                        mHandler.sendMessageDelayed(mHandler.obtainMessage(Const.MSG_READ_CARD, ""), 1000);
                     }
                     break;
 
@@ -1994,7 +1995,6 @@ public class MainActivity extends AppCompatActivity implements NetWorkStateRecei
     private IdentityInfo info;
     private Bitmap cardBitmap;
     private byte[] image;
-    private boolean hasPermission = false;
 
     private class GetIDInfoTask extends AsyncTask<Void, Integer, Boolean> {
         public boolean taskIsRuning = true;
@@ -2021,7 +2021,6 @@ public class MainActivity extends AppCompatActivity implements NetWorkStateRecei
 
                 if (info != null) {
                     if("".equals(info.getName())) {
-                        Log.e(TAG, "名字===Null");
                         return false;
                     }
                     image = info.getHead_photo();
