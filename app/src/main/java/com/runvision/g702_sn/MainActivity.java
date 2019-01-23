@@ -905,7 +905,7 @@ public class MainActivity extends AppCompatActivity implements NetWorkStateRecei
         List<FaceInfo> result = new ArrayList<FaceInfo>();
         List<LivenessInfo> livenessInfoList = new ArrayList<>();
         //G702---90   G701---270
-        byte[] des = CameraHelp.rotateCamera(imageStack.pullImageInfo().getData(), 640, 480, 90);
+        byte[] des = CameraHelp.rotateCamera(imageStack.pullImageInfo().getData(), 640, 480, 270);
 
         MyApplication.mFaceLibCore.FaceDetection(des, 480, 640, result);
         if (result.size() == 0) {
